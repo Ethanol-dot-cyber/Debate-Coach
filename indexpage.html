@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Debate Coach</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 { color: #333; text-align: center; }
+        label { font-weight: bold; display: block; margin-top: 15px; }
+        
+        select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box; 
+        }
+        textarea { height: 150px; resize: vertical; }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            border-left: 5px solid #007bff;
+            display: none; 
+            white-space: pre-line; 
+        }
+        .loading { text-align: center; color: #666; display: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎤 AI Debate Coach</h1>
+        
+        <label for="formatSelect">Debate Style:</label>
+        <select id="formatSelect">
+            <option value="default">General Feedback</option>
+            <option value="lincoln_douglas">Lincoln-Douglas (Logic & Morals)</option>
+            <option value="congressional">Congressional (Rhetoric & Roleplay)</option>
+            <option value="public_forum">Public Forum (Evidence & Facts)</option>
+            <option value="spar">SPAR (Wit & Speed)</option>
+        </select>
+
+        <label for="speechInput">Paste or Type your Argument:</label>
+        <textarea id="speechInput" placeholder="Honorable judges, I affirm the resolution that..."></textarea>
+
+        <button id="analyzeBtn">Analyze Argument</button>
+        
+        <div id="loading" class="loading">Thinking... </div>
+
+        <div id="result" class="result-box"></div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        const API_KEY = "AIzaSyCmyMMX9EJXbTfWEf7msPPUkAER9nVJILA"; 
+        
+        const MODEL_NAME = "gemini-2.5-flash";
+
+        const PROMPTS = {
+            'default': "You are a helpful debate coach. Analyze for clarity and logic. Provide a score /10 and 3 feedback bullets.",
+            'lincoln_douglas': "You are a Lincoln-Douglas judge. Focus on Value Premise, Criterion, and moral logic.",
+            'congressional': "You are a Congressional scorer. Focus on rhetoric, roleplaying, and clash.",
+            'public_forum': "You are a PF judge. Focus on evidence, statistics, and clear impacts.",
+            'spar': "You are a SPAR judge. Focus on wit, quick thinking, and punchy arguments."
+        };
+
+        const btn = document.getElementById('analyzeBtn');
+        const input = document.getElementById('speechInput');
+        const select = document.getElementById('formatSelect');
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+
+        btn.addEventListener('click', async () => {
+            const speech = input.value.trim();
+            if (!speech) return alert("Please type an argument first!");
+
+            btn.disabled = true;
+            btn.innerText = "Analyzing...";
+            loadingDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            try {
+                const genAI = new GoogleGenerativeAI(API_KEY);
+                const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+                const instruction = PROMPTS[select.value];
+                const finalPrompt = `${instruction}\n\nStudent Speech:\n"${speech}"\n\nProvide constructive feedback.`;
+
+                const result = await model.generateContent(finalPrompt);
+                const response = await result.response;
+                const text = response.text();
+
+                resultDiv.innerText = text; 
+                resultDiv.style.display = 'block'; 
+
+            } catch (error) {
+                alert("Error: " + error.message);
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Analyze Argument";
+                loadingDiv.style.display = 'none';
+            }
+        });
+    </script>
+
+</body>
+</html>
